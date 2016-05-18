@@ -1,0 +1,33 @@
+/*
+2016/05/18 \@y_sharp
+for NUCLEO-F207ZG
+*/
+//利用するUSARTを指定
+#define USART 3
+
+//利用するUSARTのボーレートを指定
+#define BaudRate (921600)
+
+//利用するUSARTのTXピンのポートを指定
+#define TX_PORT D
+
+//利用するUSARTのTXピンを指定
+#define TX_PIN 8
+
+//利用するUSARTのRXピンのポートを指定
+#define RX_PORT D
+
+//利用するUSARTのRXピンを指定
+#define RX_PIN 9
+
+//USARTの送信DMAを指定
+#define USARTx_TX_DMA DMA1
+#define USARTx_TX_DMA_Stream DMA1_Stream3
+#define USARTx_TX_DMA_Stream_No 3
+#define USARTx_TX_DMA_Ch 4
+#define USARTx_TX_DMA_Stream_IRQn DMA1_Stream3_IRQn
+#define USARTx_TX_DMA_IRQ_Handler DMA1_Stream3_IRQHandler
+
+//DMA送信時のバッファ変数
+#define TRNS_CNT_BIT 5//バッファの個数(ビット表記，2^NのN)
+#define TRNS_BUF 256//1バッファあたりのサイズ

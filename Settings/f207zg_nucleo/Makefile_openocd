@@ -1,0 +1,43 @@
+#############################
+#OpenOCDを用いたデバッグ関係#
+#############################
+
+#OpenOCDのパス
+OCD_ROOT=C:/Devz/ARM/OCD
+
+#OpenOCDの設定ファイル(tcl)のパス
+OCD_TCL=C:/Devz/ARM/OCD/tcl
+
+#OpenOCDの実行ファイル名
+OCD=openocd
+
+#OpenOCDへの共通の引数
+OCD_COMMON_ARGS = -s $(OCD_TCL) -f interface/stlink-v2-1.cfg -f target/stm32f2x_flash.cfg
+
+#Insightのパス
+ARM_INSIGHT_ROOT=C:/Devz/ARM/insight/bin
+
+#Insightの実行ファイル名
+INSIGHT = $(TARGET_PREFIX)insight
+
+#OpenOCDによるデバッグ
+debug:
+ifeq ($(OS),Windows_NT)
+	@$(ECHO) Insight Start
+	@cmd /c start /B $(ARM_INSIGHT_ROOT)/$(INSIGHT) $(PROJ_NAME).elf
+	@$(ECHO) OpenOCD Start
+	@start $(OCD_ROOT)/$(OCD) $(OCD_COMMON_ARGS) \
+		-c "reset halt" -c "arm semihosting enable"
+else
+	@$(ECHO) Insight Start
+	@$(ARM_INSIGHT_ROOT)/$(INSIGHT) $(PROJ_NAME).elf &
+	@$(ECHO) OpenOCD Start
+	@$(OCD_ROOT)/$(OCD) $(OCD_COMMON_ARGS) \
+		-c "reset halt" -c "arm semihosting enable"
+endif
+
+#OpenOCDによる書き込み
+flash: $(PROJ_NAME).hex
+	@$(ECHO) "Write binary to STM32 ROM(OpenOCD using SWD)"
+	@$(OCD_ROOT)/$(OCD) $(OCD_COMMON_ARGS) \
+		-c "mt_flash $(PROJ_NAME).elf"

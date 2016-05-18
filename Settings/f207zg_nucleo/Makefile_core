@@ -1,0 +1,194 @@
+#ターゲットの定義
+TARGET			= arm-none-eabi
+
+#外部水晶の周波数を指定[Hz]
+HSE_VALUE		= 8000000
+
+#SWD書き込みの場合のCUIインタフェース名
+ST-LINK_CLI = "ST-LINK_CLI.exe"
+
+############################
+#メインのユーザファイル関係#
+############################
+#ユーザソースフォルダの指定
+USER_SRC_DIRS := .
+#ユーザヘッダファイルの位置(パスの末尾に/をつけない！)
+USER_INCLUDE_DIRS = -I . \
+
+###########
+#CMSIS関係#
+###########
+#CMSISの基準位置
+CMSIS_DIR = $(LIB_PATH)/Drivers/CMSIS
+#CMSISのインクルードするファイルがあるフォルダの指定
+CMSIS_INCLUDE_DIRS =	-I $(CMSIS_DIR)/Include \
+						-I $(CMSIS_DIR)/Device/ST/STM32F2xx/Include \
+
+######################
+#共通ライブラリの作成#
+######################
+include $(BOARD_SETTINGS_PATH)/Makefile_dsplib
+include $(BOARD_SETTINGS_PATH)/Makefile_hallib
+include $(BOARD_SETTINGS_PATH)/Makefile_stm32f207zg_nucleo144
+
+######################
+#個別ライブラリの設定#
+######################
+include $(BOARD_SETTINGS_PATH)/Makefile_devicedriver
+include $(BOARD_SETTINGS_PATH)/Makefile_board
+
+##############
+#デバッガ関係#
+##############
+include $(BOARD_SETTINGS_PATH)/Makefile_openocd
+
+###########
+#リンカ関係#
+###########
+#リンカスクリプトの基準位置
+LINKER_DIR = $(LIB_PATH)/linker
+#リンカスクリプト名
+LINKER_NAME = STM32F207ZGT6.ld
+
+############################
+#スタートアップファイル関連#
+############################
+START_UP_DIR	:= $(CMSIS_DIR)/Device/ST/STM32F2xx/Source/Templates/gcc
+START_UP_FILE	:= startup_stm32f207xx.s
+START_UP_ASM	:= $(START_UP_DIR)/$(START_UP_FILE)
+
+##################################
+#以下は基本的には編集しないこと！#
+##################################
+
+#各種コマンド定義
+TARGET_PREFIX	= $(TARGET)-
+CC				= $(TARGET_PREFIX)gcc
+CXX				= $(TARGET_PREFIX)g++
+LD				= $(TARGET_PREFIX)g++
+AS				= $(TARGET_PREFIX)as
+AR				= $(TARGET_PREFIX)ar
+OBJCOPY			= $(TARGET_PREFIX)objcopy
+SIZE			= $(TARGET_PREFIX)size
+RANLIB			= $(TARGET_PREFIX)ranlib
+RM				= rm -rf
+ifeq ($(OS),Windows_NT)
+	ECHO		= echo.exe
+	MKDIR		= mkdir
+else
+	ECHO		= echo
+	MKDIR		= mkdir -p
+endif
+
+
+#ソースコードのリストを作成
+USER_SRCS := $(wildcard ./*.c) $(wildcard ./*.cpp)
+
+#各種コマンドのオプション
+
+CFLAGS+=-c -g -mthumb -mcpu=cortex-m3 -Og -Wall -ffunction-sections -fdata-sections -mthumb -mlittle-endian
+CFLAGS+=$(FPU_FLAG)
+
+LINK_SCRIPT=$(LINKER_DIR)/$(LINKER_NAME)
+LDFLAGS= -mthumb -mcpu=cortex-m3 -lm
+LDFLAGS+=-Wl,--gc-sections -T$(LINK_SCRIPT) -static  -Wl,-cref -Wl,-Map=$(PROJ_NAME).map -Wl,--defsym=malloc_getpagesize_P=0x1000 -lstdc++
+LDFLAGS+= -L $(LINKER_DIR)
+
+#各種定義
+CFLAGS+=-D"USE_HAL_DRIVER"
+CFLAGS+=$(USER_INCLUDE_DIRS)
+CFLAGS+=$(CMSIS_INCLUDE_DIRS)
+CFLAGS+=$(INCLUDE_DIRS)
+CFLAGS+=-D"HSE_VALUE=$(HSE_VALUE)"
+CFLAGS+=-D"HSE_STARTUP_TIMEOUT=((uint16_t)0x0500)"
+CFLAGS+=-D"HSI_VALUE=16000000"
+#DSPライブラリを使うために定義
+CFLAGS+=-D"ARM_MATH_CM3"
+#MCUの設定
+CFLAGS+=-D"STM32F207xx"
+#Systickドライバの割り込み最大数
+CFLAGS+=-D"SYSTICK_IRQ_MAX=$(SYSTICKDRIVER_MAX)"
+
+#C++向けのオプション設定
+CXXFLAGS= -fno-rtti -fno-exceptions $(CFLAGS)
+
+#ユーザーオブジェクトファイル一覧
+USER_OBJS := $(filter %.o,$(patsubst %.c,%.o,$(USER_SRCS))) $(filter %.o,$(patsubst %.cpp,%.o,$(USER_SRCS))) $(notdir $(START_UP_ASM:%.s=%.o))
+
+#全オブジェクトファイルにユーザオブジェクトを登録
+OBJS+=$(USER_OBJS)
+
+####################
+#実際に処理する部分#
+####################
+$(PROJ_NAME).elf: $(OBJS) $(COMMON_LIB_DEPENDS)
+	@$(ECHO) Generating elf file.
+	$(LD) -o $@ $(OBJS) $(LDFLAGS) $(COMMON_LIBS)
+	@$(ECHO)
+
+$(PROJ_NAME).hex: $(PROJ_NAME).elf
+	@$(ECHO) Generating hex file.
+	$(OBJCOPY) -O ihex $^ $@
+	$(SIZE) $@
+	@$(ECHO)
+
+$(PROJ_NAME).bin: $(PROJ_NAME).elf
+	@$(ECHO) Generating bin file.
+	$(OBJCOPY) -O binary -S $^ $@
+	@$(ECHO)
+
+clean: depend
+	$(RM) $(OBJS) $(PROJ_NAME).elf $(PROJ_NAME).map $(PROJ_NAME).bin $(PROJ_NAME).hex
+	@$(ECHO)
+	@$(ECHO) Clean up!
+
+depend:
+	@$(RM) Makefile.depend
+	@$(ECHO) Generating Makefile.depend
+	@$(CC) -MM -w $(CFLAGS) $(USER_SRCS) >>Makefile.depend
+	@$(CC) -MM -w $(CFLAGS) $(DEVICE_DRIVER_SRCS)>Makefile.depend_dev
+	@sed -e "s/^.*\.o/$(subst /,\/,$(DEVICE_DRIVER_OUT_DIR))\/&/g" Makefile.depend_dev>>Makefile.depend
+	@$(RM) Makefile.depend_dev
+#	@$(CC) -MM -w $(CFLAGS) $(COMMON_LIB_SRCS) >>Makefile.depend
+
+rom:
+	@$(ECHO) Write binary to STM32 ROM(DFU)
+	dfuw $(PROJ_NAME).hex
+
+swd: all
+	@$(ECHO) Write binary to STM32 ROM(SWD)
+	@$(ST-LINK_CLI) -c SWD $(ST-LINK_CLI_OPT) -P $(PROJ_NAME).hex -V
+
+#依存関係を取り込む
+-include Makefile.depend
+
+#共通ライブラリの一括コンパイル
+commonlib:$(COMMON_LIBS)
+
+#スタートアップファイルのコンパイル
+$(notdir $(START_UP_ASM:%.s=%.o)):$(START_UP_ASM)
+ifeq ($(OS),Windows_NT)
+	@$(MKDIR) $(subst /,\,$(dir $@)) 2> NUL || echo off
+else
+	@$(MKDIR) $(dir $@)
+endif
+	$(CC) $(CFLAGS) $< -o $@
+	@$(ECHO)
+
+
+#その他
+.c.o:
+	$(CC) $(CFLAGS) $< -o $@
+#アセンブラコードも出力してみる
+#	$(CC) $(CFLAGS) -S $<
+	@$(ECHO)
+
+.cpp.o:
+	$(CXX) $(CXXFLAGS) $< -o $@
+#アセンブラコードも出力してみる
+#	$(CXX) $(CFLAGS) -S $<
+	@$(ECHO)
+
+.s.o:
+	$(CC) $(CFLAGS) $< -o $@
+	@$(ECHO)
