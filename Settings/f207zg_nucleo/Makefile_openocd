@@ -12,7 +12,10 @@ OCD_TCL=C:/Devz/ARM/OCD/tcl
 OCD=openocd
 
 #OpenOCDへの共通の引数
-OCD_COMMON_ARGS = -s $(OCD_TCL) -f interface/stlink-v2-1.cfg -f target/stm32f2x_flash.cfg
+OCD_COMMON_ARGS = -s $(OCD_TCL) -f interface/stlink-v2-1.cfg  $(OCD_ST-LINK_SERIAL) -f target/stm32f2x_flash.cfg
+ifdef ST-LINK_SERIAL
+	OCD_ST-LINK_SERIAL = -c "hla_serial $(ST-LINK_SERIAL)" 
+endif
 
 #Insightのパス
 ARM_INSIGHT_ROOT=C:/Devz/ARM/insight/bin
