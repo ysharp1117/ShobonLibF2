@@ -2,14 +2,14 @@
   ******************************************************************************
   * @file    stm322xg_eval.h
   * @author  MCD Application Team
-  * @version V6.1.2
-  * @date    09-October-2015
+  * @version V6.2.1
+  * @date    01-July-2016
   * @brief   This file contains definitions for STM322xG_EVAL's LEDs, 
   *          push-buttons and COM ports hardware resources.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2015 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -250,6 +250,25 @@ typedef enum
 #define EVAL_COMx_RX_GPIO_CLK_DISABLE(__INDEX__)   do{if((__INDEX__) == 0) EVAL_COM1_RX_GPIO_CLK_DISABLE();}while(0)
 
 /**
+ * @brief Definition for Potentiometer, connected to ADC3
+ */ 
+#define ADCx                            ADC3
+#define ADCx_CLK_ENABLE()               __HAL_RCC_ADC3_CLK_ENABLE()
+#define ADCx_CHANNEL_GPIO_CLK_ENABLE()  __HAL_RCC_GPIOF_CLK_ENABLE()
+
+#define ADCx_FORCE_RESET()              __HAL_RCC_ADC_FORCE_RESET()
+#define ADCx_RELEASE_RESET()            __HAL_RCC_ADC_RELEASE_RESET()
+
+/* Definition for ADCx Channel Pin */
+#define ADCx_CHANNEL_PIN                GPIO_PIN_9
+#define ADCx_CHANNEL_GPIO_PORT          GPIOF
+
+/* Definition for ADCx's Channel */
+#define ADCx_CHANNEL                    ADC_CHANNEL_7
+#define SAMPLINGTIME                    ADC_SAMPLETIME_3CYCLES
+#define ADCx_POLL_TIMEOUT               10
+
+/**
   * @brief Joystick Pins definition 
   */ 
 #define JOY_SEL_PIN                  IO_PIN_7
@@ -327,6 +346,8 @@ void             BSP_LED_Toggle(Led_TypeDef Led);
 void             BSP_PB_Init(Button_TypeDef Button, ButtonMode_TypeDef Button_Mode);
 uint32_t         BSP_PB_GetState(Button_TypeDef Button);
 void             BSP_COM_Init(COM_TypeDef COM, UART_HandleTypeDef *huart);
+void             BSP_POTENTIOMETER_Init(void);
+uint32_t         BSP_POTENTIOMETER_GetLevel(void);
 uint8_t          BSP_JOY_Init(JOYMode_TypeDef Joy_Mode);
 JOYState_TypeDef BSP_JOY_GetState(void);
 

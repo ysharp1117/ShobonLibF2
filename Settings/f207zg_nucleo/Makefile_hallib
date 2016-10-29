@@ -19,6 +19,9 @@ INCLUDE_DIRS+=$(addprefix -I,$(HAL_LIB_INCLUDE_DIRS))
 ###################
 HAL_LIB_SRCS = $(wildcard $(HAL_LIB_SRC_DIR)/*.c)
 HAL_LIB_SRCS := $(filter-out $(wildcard $(HAL_LIB_SRC_DIR)/stm32f2xx_hal_msp_template.c), $(HAL_LIB_SRCS))#コンパイル除外対象の設定
+HAL_LIB_SRCS := $(filter-out $(wildcard $(HAL_LIB_SRC_DIR)/stm32f2xx_hal_timebase_rtc_alarm_template.c), $(HAL_LIB_SRCS))#コンパイル除外対象の設定
+HAL_LIB_SRCS := $(filter-out $(wildcard $(HAL_LIB_SRC_DIR)/stm32f2xx_hal_timebase_rtc_wakeup_template.c), $(HAL_LIB_SRCS))#コンパイル除外対象の設定
+HAL_LIB_SRCS := $(filter-out $(wildcard $(HAL_LIB_SRC_DIR)/stm32f2xx_hal_timebase_tim_template.c), $(HAL_LIB_SRCS))#コンパイル除外対象の設定
 
 HAL_LIB_OBJS = $(subst ../,,$(HAL_LIB_SRCS:%.c=%.o))
 

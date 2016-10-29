@@ -2,14 +2,14 @@
   ******************************************************************************
   * @file    stm322xg_eval_sram.c
   * @author  MCD Application Team
-  * @version V6.1.2
-  * @date    09-October-2015
+  * @version V6.2.1
+  * @date    01-July-2016
   * @brief   This file includes the SRAM driver for the IS61WV102416BLL-10MLI memory 
   *          device mounted on STM322xG-EVAL evaluation board.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2015 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -108,7 +108,7 @@
 /** @defgroup stm322xg_eval_sram_Private_Variables
   * @{
   */
-static SRAM_HandleTypeDef sramHandle;
+SRAM_HandleTypeDef sramHandle;
 static FSMC_NORSRAM_TimingTypeDef Timing;
 /**
   * @}
@@ -138,11 +138,11 @@ uint8_t BSP_SRAM_Init(void)
   
   /* SRAM device configuration */  
   Timing.AddressSetupTime      = 0;
-  Timing.AddressHoldTime       = 0;
+  Timing.AddressHoldTime       = 1;
   Timing.DataSetupTime         = 4;
   Timing.BusTurnAroundDuration = 1;
-  Timing.CLKDivision           = 0;
-  Timing.DataLatency           = 0;
+  Timing.CLKDivision           = 2;
+  Timing.DataLatency           = 2;
   Timing.AccessMode            = FSMC_ACCESS_MODE_A;
   
   sramHandle.Init.NSBank             = FSMC_NORSRAM_BANK2;
@@ -248,16 +248,6 @@ uint8_t BSP_SRAM_WriteData_DMA(uint32_t uwStartAddress, uint16_t *pData, uint32_
 }
 
 /**
-  * @brief  Handles SRAM DMA transfer interrupt request.
-  * @param  None
-  * @retval None
-  */
-void BSP_SRAM_DMA_IRQHandler(void)
-{
-  HAL_DMA_IRQHandler(sramHandle.hdma); 
-}
-
-/**
   * @brief  Initializes SRAM MSP.
   * @param  hsram: SRAM handle
   * @retval None
@@ -337,7 +327,7 @@ static void SRAM_MspInit(void)
   HAL_DMA_Init(&dmaHandle);
     
   /* NVIC configuration for DMA transfer complete interrupt */
-  HAL_NVIC_SetPriority(SRAM_DMAx_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(SRAM_DMAx_IRQn, 0x0F, 0);
   HAL_NVIC_EnableIRQ(SRAM_DMAx_IRQn);   
 }
 

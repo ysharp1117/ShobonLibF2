@@ -2,14 +2,14 @@
   ******************************************************************************
   * @file    stm322xg_eval_camera.c
   * @author  MCD Application Team
-  * @version V6.1.2
-  * @date    09-October-2015
+  * @version V6.2.1
+  * @date    01-July-2016
   * @brief   This file includes the driver for Camera module mounted on
   *          STM322xG-EVAL evaluation board(MB786).
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2015 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -105,7 +105,7 @@
 /** @defgroup STM322xG_EVAL_CAMERA_Private_Variables
   * @{
   */ 
-static DCMI_HandleTypeDef hdcmi_eval;
+DCMI_HandleTypeDef hdcmi_eval;
 
 CAMERA_DrvTypeDef  *camera_drv;
 uint32_t current_resolution;
@@ -199,11 +199,8 @@ void BSP_CAMERA_SnapshotStart(uint8_t *buff)
   */
 void BSP_CAMERA_Suspend(void) 
 {
-  /* Disable the DMA */
-  __HAL_DMA_DISABLE(hdcmi_eval.DMA_Handle);
-  /* Disable the DCMI */
-  __HAL_DCMI_DISABLE(&hdcmi_eval);
-  
+  /* Suspend the Camera Capture */
+  HAL_DCMI_Suspend(&hdcmi_eval);
 }
 
 /**
@@ -213,10 +210,8 @@ void BSP_CAMERA_Suspend(void)
   */
 void BSP_CAMERA_Resume(void) 
 {
-  /* Enable the DCMI */
-  __HAL_DCMI_ENABLE(&hdcmi_eval);
-  /* Enable the DMA */
-  __HAL_DMA_ENABLE(hdcmi_eval.DMA_Handle);
+  /* Start the Camera Capture */
+  HAL_DCMI_Resume(&hdcmi_eval);
 }
 
 /**
@@ -301,26 +296,6 @@ void BSP_CAMERA_ColorEffectConfig(uint32_t Effect)
   {
     camera_drv->Config(CAMERA_I2C_ADDRESS, CAMERA_COLOR_EFFECT, Effect, 0);
   }  
-}
-
-/**
-  * @brief  Handles DCMI interrupt request.
-  * @param  None
-  * @retval None
-  */
-void BSP_CAMERA_IRQHandler(void) 
-{
-  HAL_DCMI_IRQHandler(&hdcmi_eval);
-}
-
-/**
-  * @brief  Handles DMA interrupt request.
-  * @param  None
-  * @retval None
-  */
-void BSP_CAMERA_DMA_IRQHandler(void) 
-{
-  HAL_DMA_IRQHandler(hdcmi_eval.DMA_Handle);
 }
 
 /**
@@ -424,11 +399,11 @@ static void DCMI_MspInit(void)
   
   /*** Configure the NVIC for DCMI and DMA ***/
   /* NVIC configuration for DCMI transfer complete interrupt */
-  HAL_NVIC_SetPriority(DCMI_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(DCMI_IRQn, 0x0F, 0);
   HAL_NVIC_EnableIRQ(DCMI_IRQn);  
   
   /* NVIC configuration for DMA2 transfer complete interrupt */
-  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 0x0F, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn); 
   
   /* Configure the DMA stream */

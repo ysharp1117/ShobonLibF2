@@ -2,14 +2,14 @@
   ******************************************************************************
   * @file    stm322xg_eval_camera.h
   * @author  MCD Application Team
-  * @version V6.1.2
-  * @date    09-October-2015
+  * @version V6.2.1
+  * @date    01-July-2016
   * @brief   This file contains all the functions prototypes for the 
   *          stm322xg_eval_camera.c driver.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2015 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -89,7 +89,9 @@ typedef enum
 /** @defgroup STM322xG_EVAL_CAMERA_Exported_Constants
   * @{
   */
-#define CAMERA_I2C_ADDRESS 0x60  
+#define CAMERA_I2C_ADDRESS 0x60
+#define BSP_CAMERA_IRQHandler           DCMI_IRQHandler
+#define BSP_CAMERA_DMA_IRQHandler       DMA2_Stream1_IRQHandler
 /**
   * @}
   */  
@@ -103,20 +105,15 @@ void     BSP_CAMERA_SnapshotStart(uint8_t *buff);
 void     BSP_CAMERA_Suspend(void);
 void     BSP_CAMERA_Resume(void); 
 uint8_t  BSP_CAMERA_Stop(void);
-void   BSP_CAMERA_LineEventCallback(void);
-void   BSP_CAMERA_VsyncEventCallback(void);
-void   BSP_CAMERA_FrameEventCallback(void);
-void   BSP_CAMERA_ErrorCallback(void);
+void     BSP_CAMERA_LineEventCallback(void);
+void     BSP_CAMERA_VsyncEventCallback(void);
+void     BSP_CAMERA_FrameEventCallback(void);
+void     BSP_CAMERA_ErrorCallback(void);
 
 /* Camera features functions prototype */
 void     BSP_CAMERA_ContrastBrightnessConfig(uint32_t contrast_level, uint32_t brightness_level);
 void     BSP_CAMERA_BlackWhiteConfig(uint32_t Mode);
 void     BSP_CAMERA_ColorEffectConfig(uint32_t Effect);
-
-/* To be called in DCMI_IRQHandler function */
-void     BSP_CAMERA_IRQHandler(void);
-/* To be called in DMA2_Stream1_IRQHandler function */
-void     BSP_CAMERA_DMA_IRQHandler(void);
 
 /**
   * @}

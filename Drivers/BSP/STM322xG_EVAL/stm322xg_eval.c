@@ -2,15 +2,15 @@
   ******************************************************************************
   * @file    stm322xg_eval.c
   * @author  MCD Application Team
-  * @version V6.1.2
-  * @date    09-October-2015
+  * @version V6.2.1
+  * @date    01-July-2016
   * @brief   This file provides a set of firmware functions to manage LEDs, 
   *          push-buttons and COM ports available on STM322xG-EVAL evaluation 
   *          board(MB786) RevB from STMicroelectronics.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2015 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -78,17 +78,17 @@ typedef struct
   */
 
 /**
-  * @brief STM322xG EVAL BSP Driver version number V6.1.2
+  * @brief STM322xG EVAL BSP Driver version number V6.2.0
   */
 #define __STM322xG_EVAL_BSP_VERSION_MAIN   (0x06) /*!< [31:24] main version */
-#define __STM322xG_EVAL_BSP_VERSION_SUB1   (0x01) /*!< [23:16] sub1 version */
-#define __STM322xG_EVAL_BSP_VERSION_SUB2   (0x02) /*!< [15:8]  sub2 version */
+#define __STM322xG_EVAL_BSP_VERSION_SUB1   (0x02) /*!< [23:16] sub1 version */
+#define __STM322xG_EVAL_BSP_VERSION_SUB2   (0x00) /*!< [15:8]  sub2 version */
 #define __STM322xG_EVAL_BSP_VERSION_RC     (0x00) /*!< [7:0]  release candidate */ 
 #define __STM322xG_EVAL_BSP_VERSION         ((__STM322xG_EVAL_BSP_VERSION_MAIN << 24)\
                                              |(__STM322xG_EVAL_BSP_VERSION_SUB1 << 16)\
                                              |(__STM322xG_EVAL_BSP_VERSION_SUB2 << 8 )\
                                              |(__STM322xG_EVAL_BSP_VERSION_RC))
-                                              
+
 #define FSMC_BANK3_BASE  ((uint32_t)(0x60000000 | 0x08000000))
 #define FSMC_BANK3       ((LCD_CONTROLLER_TypeDef *) FSMC_BANK3_BASE)
 
@@ -112,12 +112,11 @@ GPIO_TypeDef* GPIO_PORT[LEDn] = {LED1_GPIO_PORT,
                                  LED2_GPIO_PORT, 
                                  LED3_GPIO_PORT,
                                  LED4_GPIO_PORT};
-                                 
+
 const uint16_t GPIO_PIN[LEDn] = {LED1_PIN, 
                                  LED2_PIN, 
                                  LED3_PIN,
                                  LED4_PIN};
-                                 
 
 GPIO_TypeDef* BUTTON_PORT[BUTTONn] = {WAKEUP_BUTTON_GPIO_PORT, 
                                       TAMPER_BUTTON_GPIO_PORT,
@@ -126,7 +125,7 @@ GPIO_TypeDef* BUTTON_PORT[BUTTONn] = {WAKEUP_BUTTON_GPIO_PORT,
 const uint16_t BUTTON_PIN[BUTTONn] = {WAKEUP_BUTTON_PIN, 
                                       TAMPER_BUTTON_PIN,
                                       KEY_BUTTON_PIN}; 
-                                             
+
 const uint16_t BUTTON_IRQn[BUTTONn] = {WAKEUP_BUTTON_EXTI_IRQn, 
                                        TAMPER_BUTTON_EXTI_IRQn,
                                        KEY_BUTTON_EXTI_IRQn};
@@ -146,6 +145,7 @@ const uint16_t COM_TX_AF[COMn] = {EVAL_COM1_TX_AF};
 const uint16_t COM_RX_AF[COMn] = {EVAL_COM1_RX_AF};
 
 I2C_HandleTypeDef  heval_I2c;
+static ADC_HandleTypeDef hEvalADC;
 
 static uint8_t Is_LCD_IO_Initialized = 0;
 
@@ -183,9 +183,10 @@ void            IOE_WriteMultiple(uint8_t Addr, uint8_t Reg, uint8_t *Buffer, ui
 
 /* LCD IO functions */
 void            LCD_IO_Init(void);
-void            LCD_IO_WriteData(uint16_t RegValue);
+void            LCD_IO_WriteData(uint16_t Data);
+void            LCD_IO_WriteMultipleData(uint8_t *pData, uint32_t Size);
 void            LCD_IO_WriteReg(uint8_t Reg);
-uint16_t        LCD_IO_ReadData(void);
+uint16_t        LCD_IO_ReadData(uint16_t Reg);
 
 /* AUDIO IO functions */
 void            AUDIO_IO_Init(void);
@@ -414,6 +415,77 @@ void BSP_COM_Init(COM_TypeDef COM, UART_HandleTypeDef *huart)
 }
 
 /**
+  * @brief  Init Potentiometer.
+  * @param  None
+  * @retval None
+  */
+void BSP_POTENTIOMETER_Init(void)
+{
+  GPIO_InitTypeDef          GPIO_InitStruct;
+  ADC_ChannelConfTypeDef    ADC_Config;
+
+  /* ADC an GPIO Periph clock enable */
+  ADCx_CLK_ENABLE();
+  ADCx_CHANNEL_GPIO_CLK_ENABLE();
+
+  /* ADC Channel GPIO pin configuration */
+  GPIO_InitStruct.Pin = ADCx_CHANNEL_PIN;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(ADCx_CHANNEL_GPIO_PORT, &GPIO_InitStruct);
+
+  /* Configure the ADC peripheral */
+  hEvalADC.Instance          = ADCx;
+
+  HAL_ADC_DeInit(&hEvalADC);
+
+  hEvalADC.Init.ClockPrescaler        = ADC_CLOCKPRESCALER_PCLK_DIV2;  /* Asynchronous clock mode, input ADC clock not divided */
+  hEvalADC.Init.Resolution            = ADC_RESOLUTION_12B;            /* 12-bit resolution for converted data */
+  hEvalADC.Init.DataAlign             = ADC_DATAALIGN_RIGHT;           /* Right-alignment for converted data */
+  hEvalADC.Init.ScanConvMode          = DISABLE;                       /* Sequencer disabled (ADC conversion on only 1 channel: channel set on rank 1) */
+  hEvalADC.Init.EOCSelection          = DISABLE;                       /* EOC flag picked-up to indicate conversion end */
+  hEvalADC.Init.ContinuousConvMode    = DISABLE;                       /* Continuous mode disabled to have only 1 conversion at each conversion trig */
+  hEvalADC.Init.NbrOfConversion       = 1;                             /* Parameter discarded because sequencer is disabled */
+  hEvalADC.Init.DiscontinuousConvMode = DISABLE;                       /* Parameter discarded because sequencer is disabled */
+  hEvalADC.Init.NbrOfDiscConversion   = 0;                             /* Parameter discarded because sequencer is disabled */
+  hEvalADC.Init.ExternalTrigConv      = ADC_EXTERNALTRIGCONV_T1_CC1;   /* Software start to trig the 1st conversion manually, without external event */
+  hEvalADC.Init.ExternalTrigConvEdge  = ADC_EXTERNALTRIGCONVEDGE_NONE; /* Parameter discarded because software trigger chosen */
+  hEvalADC.Init.DMAContinuousRequests = DISABLE;                       /* DMA one-shot mode selected  */
+
+  HAL_ADC_Init(&hEvalADC);
+
+  /* Configure ADC regular channel */
+  ADC_Config.Channel      = ADCx_CHANNEL;                 /* Sampled channel number */
+  ADC_Config.Rank         = 1;                            /* Rank of sampled channel number ADCx_CHANNEL */
+  ADC_Config.SamplingTime = ADC_SAMPLETIME_3CYCLES;       /* Sampling time (number of clock cycles unit) */
+  ADC_Config.Offset       = 0;                            /* Parameter discarded because offset correction is disabled */
+
+  HAL_ADC_ConfigChannel(&hEvalADC, &ADC_Config);
+}
+
+/**
+  * @brief  Get Potentiometer level in 12 bits.
+  * @retval Potentiometer level(0..0xFFF) / 0xFFFFFFFF : Error
+  */
+uint32_t BSP_POTENTIOMETER_GetLevel(void)
+{   
+  if(HAL_ADC_Start(&hEvalADC) == HAL_OK)
+  {
+    /* Wait for the end of conversion */  
+    if(HAL_ADC_PollForConversion(&hEvalADC, ADCx_POLL_TIMEOUT)== HAL_OK)
+    {
+      /* Check if the continuous conversion of regular channel is finished */
+      if((HAL_ADC_GetState(&hEvalADC) & HAL_ADC_STATE_EOC_REG) == HAL_ADC_STATE_EOC_REG)
+      {
+        /* return the converted value of regular channel */
+        return (HAL_ADC_GetValue(&hEvalADC));
+      }
+    } 
+  }
+  return  0xFFFFFFFF;
+}
+
+/**
   * @brief  Configures joystick GPIO and EXTI modes.
   * @param  Joy_Mode: Button mode.
   *          This parameter can be one of the following values:
@@ -531,11 +603,11 @@ static void I2Cx_MspInit(void)
   EVAL_I2Cx_RELEASE_RESET(); 
   
   /* Set priority and enable I2Cx event Interrupt */
-  HAL_NVIC_SetPriority(EVAL_I2Cx_EV_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(EVAL_I2Cx_EV_IRQn, 0x0F, 0);
   HAL_NVIC_EnableIRQ(EVAL_I2Cx_EV_IRQn);
   
   /* Set priority and enable I2Cx error Interrupt */
-  HAL_NVIC_SetPriority(EVAL_I2Cx_ER_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(EVAL_I2Cx_ER_IRQn, 0x0F, 0);
   HAL_NVIC_EnableIRQ(EVAL_I2Cx_ER_IRQn);
 }
 
@@ -589,7 +661,7 @@ static void I2Cx_ITConfig(void)
     HAL_GPIO_Init(GPIOI, &GPIO_InitStruct);
     
     /* Set priority and Enable GPIO EXTI Interrupt */
-    HAL_NVIC_SetPriority((IRQn_Type)(EXTI2_IRQn), 5, 0);
+    HAL_NVIC_SetPriority((IRQn_Type)(EXTI2_IRQn), 0x0E, 0);
     HAL_NVIC_EnableIRQ((IRQn_Type)(EXTI2_IRQn));
   }
 }
@@ -776,11 +848,11 @@ static void FSMC_BANK3_Init(void)
   hsram.Extended  = FSMC_NORSRAM_EXTENDED_DEVICE;
 
   SRAM_Timing.AddressSetupTime      = 3;
-  SRAM_Timing.AddressHoldTime       = 0;
+  SRAM_Timing.AddressHoldTime       = 1;
   SRAM_Timing.DataSetupTime         = 9;
   SRAM_Timing.BusTurnAroundDuration = 0;
-  SRAM_Timing.CLKDivision           = 0;
-  SRAM_Timing.DataLatency           = 0;
+  SRAM_Timing.CLKDivision           = 2;
+  SRAM_Timing.DataLatency           = 2;
   SRAM_Timing.AccessMode            = FSMC_ACCESS_MODE_A;
   
   hsram.Init.NSBank             = FSMC_NORSRAM_BANK3;
@@ -947,6 +1019,25 @@ void LCD_IO_WriteData(uint16_t Data)
 }
 
 /**
+  * @brief  Write register value.
+  * @param  pData Pointer on the register value
+  * @param  Size Size of byte to transmit to the register
+  * @retval None
+  */
+void LCD_IO_WriteMultipleData(uint8_t *pData, uint32_t Size)
+{
+  uint32_t counter;
+  uint16_t *ptr = (uint16_t *) pData;
+  
+  for (counter = 0; counter < Size; counter+=2)
+  {  
+    /* Write 16-bit Reg */
+    FSMC_BANK3_WriteData(*ptr);
+    ptr++;
+  }
+}
+
+/**
   * @brief  Writes register on LCD register.
   * @param  Reg: Register to be written
   * @retval None
@@ -959,11 +1050,14 @@ void LCD_IO_WriteReg(uint8_t Reg)
 
 /**
   * @brief  Reads data from LCD data register.
-  * @param  None
+  * @param  Reg: Register to be read
   * @retval Read data.
   */
-uint16_t LCD_IO_ReadData(void) 
+uint16_t LCD_IO_ReadData(uint16_t Reg)
 {
+  FSMC_BANK3_WriteReg(Reg);
+  
+  /* Read 16-bit Reg */  
   return FSMC_BANK3_ReadData();
 }
 
@@ -980,6 +1074,7 @@ void AUDIO_IO_Init(void)
 
 /**
   * @brief  DeInitializes Audio low level.
+  * @note   This function is intentionally kept empty, user should define it.
   */
 void AUDIO_IO_DeInit(void)
 {

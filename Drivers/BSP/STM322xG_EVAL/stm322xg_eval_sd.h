@@ -2,14 +2,14 @@
   ******************************************************************************
   * @file    stm322xg_eval_sd.h
   * @author  MCD Application Team
-  * @version V6.1.2
-  * @date    09-October-2015
+  * @version V6.2.1
+  * @date    01-July-2016
   * @brief   This file contains the common defines and functions prototypes for
   *          the stm322xg_eval_sd.c driver.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2015 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -99,6 +99,9 @@
 #define SD_DMAx_Tx_IRQHandler             DMA2_Stream6_IRQHandler
 #define SD_DMAx_Rx_IRQHandler             DMA2_Stream3_IRQHandler
 #define SD_DetectIRQHandler()             HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13)
+#define BSP_SD_IRQHandler                 SDIO_IRQHandler
+#define BSP_SD_DMA_Tx_IRQHandler          SD_DMAx_Tx_IRQHandler
+#define BSP_SD_DMA_Rx_IRQHandler          SD_DMAx_Rx_IRQHandler
 
 /**
   * @}
@@ -120,9 +123,6 @@ uint8_t BSP_SD_WriteBlocks(uint32_t *pData, uint64_t WriteAddr, uint32_t BlockSi
 uint8_t BSP_SD_ReadBlocks_DMA(uint32_t *pData, uint64_t ReadAddr, uint32_t BlockSize, uint32_t NumOfBlocks);
 uint8_t BSP_SD_WriteBlocks_DMA(uint32_t *pData, uint64_t WriteAddr, uint32_t BlockSize, uint32_t NumOfBlocks);
 uint8_t BSP_SD_Erase(uint64_t StartAddr, uint64_t EndAddr);
-void    BSP_SD_IRQHandler(void);
-void    BSP_SD_DMA_Tx_IRQHandler(void);
-void    BSP_SD_DMA_Rx_IRQHandler(void);
 HAL_SD_TransferStateTypedef BSP_SD_GetStatus(void);
 void    BSP_SD_GetCardInfo(HAL_SD_CardInfoTypedef *CardInfo);
 uint8_t BSP_SD_IsDetected(void);  

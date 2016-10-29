@@ -2,8 +2,8 @@
   ******************************************************************************
   * @file    ili9320.c
   * @author  MCD Application Team
-  * @version V1.0.1
-  * @date    30-December-2014
+  * @version V1.2.2
+  * @date    02-December-2014
   * @brief   This file includes the LCD driver for ILI9320 LCD.
   ******************************************************************************
   * @attention
@@ -98,6 +98,7 @@ LCD_DrvTypeDef   ili9320_drv =
 };
 
 static uint8_t Is_ili9320_Initialized = 0;
+static uint16_t ArrayRGB[320] = {0};
 
 /**
   * @}
@@ -305,10 +306,10 @@ void ili9320_SetCursor(uint16_t Xpos, uint16_t Ypos)
   * @brief  Write pixel.   
   * @param  Xpos: specifies the X position.
   * @param  Ypos: specifies the Y position.
-  * @param  RGB_Code: the RGB pixel color
+  * @param  RGBCode: the RGB pixel color
   * @retval None
   */
-void ili9320_WritePixel(uint16_t Xpos, uint16_t Ypos, uint16_t RGB_Code)
+void ili9320_WritePixel(uint16_t Xpos, uint16_t Ypos, uint16_t RGBCode)
 {
   /* Set Cursor */
   ili9320_SetCursor(Xpos, Ypos);
@@ -317,7 +318,7 @@ void ili9320_WritePixel(uint16_t Xpos, uint16_t Ypos, uint16_t RGB_Code)
   LCD_IO_WriteReg(LCD_REG_34);
 
   /* Write 16-bit GRAM Reg */
-  LCD_IO_WriteData(RGB_Code);
+  LCD_IO_WriteMultipleData((uint8_t*)&RGBCode, 2);
 }
 
 /**
@@ -334,38 +335,38 @@ uint16_t ili9320_ReadPixel(uint16_t Xpos, uint16_t Ypos)
   LCD_IO_WriteReg(LCD_REG_34);
   
   /* Dummy read */
-  LCD_IO_ReadData();
+  LCD_IO_ReadData(0x00);
   
   /* Read 16-bit Reg */
-  return (LCD_IO_ReadData());
+  return (LCD_IO_ReadData(0x00));
 }
 
 /**
   * @brief  Writes to the selected LCD register.
-  * @param  LCD_Reg:      address of the selected register.
-  * @param  LCD_RegValue: value to write to the selected register.
+  * @param  LCDReg:      address of the selected register.
+  * @param  LCDRegValue: value to write to the selected register.
   * @retval None
   */
-void ili9320_WriteReg(uint8_t LCD_Reg, uint16_t LCD_RegValue)
+void ili9320_WriteReg(uint8_t LCDReg, uint16_t LCDRegValue)
 {
-  LCD_IO_WriteReg(LCD_Reg);
+  LCD_IO_WriteReg(LCDReg);
   
   /* Write 16-bit GRAM Reg */
-  LCD_IO_WriteData(LCD_RegValue);
+  LCD_IO_WriteMultipleData((uint8_t*)&LCDRegValue, 2);
 }
 
 /**
   * @brief  Reads the selected LCD Register.
-  * @param  LCD_Reg: address of the selected register.
+  * @param  LCDReg: address of the selected register.
   * @retval LCD Register Value.
   */
-uint16_t ili9320_ReadReg(uint8_t LCD_Reg)
+uint16_t ili9320_ReadReg(uint8_t LCDReg)
 {
   /* Write 16-bit Index (then Read Reg) */
-  LCD_IO_WriteReg(LCD_Reg);
+  LCD_IO_WriteReg(LCDReg);
   
   /* Read 16-bit Reg */
-  return (LCD_IO_ReadData());
+  return (LCD_IO_ReadData(0x00));
 }
 
 /**
@@ -391,15 +392,15 @@ void ili9320_SetDisplayWindow(uint16_t Xpos, uint16_t Ypos, uint16_t Width, uint
 
 /**
   * @brief  Draw vertical line.
-  * @param  RGB_Code: Specifies the RGB color   
+  * @param  RGBCode: Specifies the RGB color   
   * @param  Xpos:     specifies the X position.
   * @param  Ypos:     specifies the Y position.
   * @param  Length:   specifies the Line length.  
   * @retval None
   */
-void ili9320_DrawHLine(uint16_t RGB_Code, uint16_t Xpos, uint16_t Ypos, uint16_t Length)
+void ili9320_DrawHLine(uint16_t RGBCode, uint16_t Xpos, uint16_t Ypos, uint16_t Length)
 {
-  uint16_t i = 0;
+  uint16_t counter = 0;
   
   /* Set Cursor */
   ili9320_SetCursor(Xpos, Ypos); 
@@ -407,24 +408,26 @@ void ili9320_DrawHLine(uint16_t RGB_Code, uint16_t Xpos, uint16_t Ypos, uint16_t
   /* Prepare to write GRAM */
   LCD_IO_WriteReg(LCD_REG_34);
 
-  for(i = 0; i < Length; i++)
+  /* Sent a complete line */
+  for(counter = 0; counter < Length; counter++)
   {
-    /* Write 16-bit GRAM Reg */
-    LCD_IO_WriteData(RGB_Code);
+    ArrayRGB[counter] = RGBCode;
   }  
+
+  LCD_IO_WriteMultipleData((uint8_t*)&ArrayRGB[0], Length * 2);
 }
 
 /**
   * @brief  Draw vertical line.
-  * @param  RGB_Code: Specifies the RGB color    
+  * @param  RGBCode: Specifies the RGB color    
   * @param  Xpos:     specifies the X position.
   * @param  Ypos:     specifies the Y position.
   * @param  Length:   specifies the Line length.  
   * @retval None
   */
-void ili9320_DrawVLine(uint16_t RGB_Code, uint16_t Xpos, uint16_t Ypos, uint16_t Length)
+void ili9320_DrawVLine(uint16_t RGBCode, uint16_t Xpos, uint16_t Ypos, uint16_t Length)
 {
-  uint16_t i = 0;
+  uint16_t counter = 0;
 
   /* set GRAM write direction and BGR = 1 */
   /* I/D=00 (Horizontal : increment, Vertical : decrement) */
@@ -437,11 +440,13 @@ void ili9320_DrawVLine(uint16_t RGB_Code, uint16_t Xpos, uint16_t Ypos, uint16_t
   /* Prepare to write GRAM */
   LCD_IO_WriteReg(LCD_REG_34);
 
-  for(i = 0; i < Length; i++)
+  /* Fill a complete vertical line */
+  for(counter = 0; counter < Length; counter++)
   {
-    /* Write 16-bit GRAM Reg */
-    LCD_IO_WriteData(RGB_Code);
+    ArrayRGB[counter] = RGBCode;
   }
+  
+  LCD_IO_WriteMultipleData((uint8_t*)&ArrayRGB[0], Length * 2);
   
   /* set GRAM write direction and BGR = 1 */
   /* I/D=00 (Horizontal : increment, Vertical : decrement) */
@@ -478,13 +483,8 @@ void ili9320_DrawBitmap(uint16_t Xpos, uint16_t Ypos, uint8_t *pbmp)
   /* Prepare to write GRAM */
   LCD_IO_WriteReg(LCD_REG_34);
  
-  for(index = 0; index < size; index++)
-  {
-    /* Write 16-bit GRAM Reg */
-    LCD_IO_WriteData(*(volatile uint16_t *)pbmp);
-    pbmp += 2;
-  }
- 
+  LCD_IO_WriteMultipleData((uint8_t*)pbmp, size*2);
+
   /* Set GRAM write direction and BGR = 1 */
   /* I/D = 01 (Horizontal : increment, Vertical : decrement) */
   /* AM = 1 (address is updated in vertical writing direction) */
@@ -502,7 +502,7 @@ void ili9320_DrawBitmap(uint16_t Xpos, uint16_t Ypos, uint8_t *pbmp)
   */
 void ili9320_DrawRGBImage(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t Ysize, uint8_t *pdata)
 {
-  uint32_t index = 0, size = 0;
+  uint32_t size = 0;
 
   size = (Xsize * Ysize);
 
@@ -512,12 +512,7 @@ void ili9320_DrawRGBImage(uint16_t Xpos, uint16_t Ypos, uint16_t Xsize, uint16_t
   /* Prepare to write GRAM */
   LCD_IO_WriteReg(LCD_REG_34);
  
-  for(index = 0; index < size; index++)
-  {
-    /* Write 16-bit GRAM Reg */
-    LCD_IO_WriteData(*(volatile uint16_t *)pdata);
-    pdata += 2;
-  }
+  LCD_IO_WriteMultipleData((uint8_t*)pdata, size*2);
 }
 
 /**

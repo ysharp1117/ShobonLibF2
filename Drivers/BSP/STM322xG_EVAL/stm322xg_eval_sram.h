@@ -2,14 +2,14 @@
   ******************************************************************************
   * @file    stm322xg_eval_sram.h
   * @author  MCD Application Team
-  * @version V6.1.2
-  * @date    09-October-2015
+  * @version V6.2.1
+  * @date    01-July-2016
   * @brief   This file contains the common defines and functions prototypes for
   *          the stm322xg_eval_sram.c driver.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2015 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -94,6 +94,7 @@
 #define SRAM_DMAx_STREAM                  DMA2_Stream0  
 #define SRAM_DMAx_IRQn                    DMA2_Stream0_IRQn
 #define SRAM_DMAx_IRQHandler              DMA2_Stream0_IRQHandler
+#define BSP_SRAM_DMA_IRQHandler           SRAM_DMAx_IRQHandler
 /**
   * @}
   */ 
@@ -113,7 +114,6 @@ uint8_t BSP_SRAM_ReadData(uint32_t uwStartAddress, uint16_t *pData, uint32_t uwD
 uint8_t BSP_SRAM_ReadData_DMA(uint32_t uwStartAddress, uint16_t *pData, uint32_t uwDataSize);
 uint8_t BSP_SRAM_WriteData(uint32_t uwStartAddress, uint16_t *pData, uint32_t uwDataSize);
 uint8_t BSP_SRAM_WriteData_DMA(uint32_t uwStartAddress, uint16_t *pData, uint32_t uwDataSize);
-void    BSP_SRAM_DMA_IRQHandler(void);
 
 /**
   * @}

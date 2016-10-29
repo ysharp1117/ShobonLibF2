@@ -2,14 +2,14 @@
   ******************************************************************************
   * @file    stm322xg_eval_sd.c
   * @author  MCD Application Team
-  * @version V6.1.2
-  * @date    09-October-2015
+  * @version V6.2.1
+  * @date    01-July-2016
   * @brief   This file includes the uSD card driver mounted on STM322xG-EVAL
   *          evaluation board.
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; COPYRIGHT(c) 2015 STMicroelectronics</center></h2>
+  * <h2><center>&copy; COPYRIGHT(c) 2016 STMicroelectronics</center></h2>
   *
   * Redistribution and use in source and binary forms, with or without modification,
   * are permitted provided that the following conditions are met:
@@ -118,7 +118,7 @@
 /** @defgroup STM322xG_EVAL_SD_Private_Variables
   * @{
   */       
-static SD_HandleTypeDef uSdHandle;
+SD_HandleTypeDef uSdHandle;
 static SD_CardInfo uSdCardInfo;
 /**
   * @}
@@ -202,7 +202,7 @@ uint8_t BSP_SD_ITConfig(void)
   HAL_GPIO_Init(SD_DETECT_GPIO_PORT, &GPIO_Init_Structure);
     
   /* NVIC configuration for SDIO interrupts */
-  HAL_NVIC_SetPriority(SD_DETECT_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(SD_DETECT_IRQn, 0x0E, 0);
   HAL_NVIC_EnableIRQ(SD_DETECT_IRQn);
   
   return 0;
@@ -422,7 +422,7 @@ static void SD_MspInit(void)
   HAL_GPIO_Init(SD_DETECT_GPIO_PORT, &GPIO_Init_Structure);
     
   /* NVIC configuration for SDIO interrupts */
-  HAL_NVIC_SetPriority(SDIO_IRQn, 5, 0);
+  HAL_NVIC_SetPriority(SDIO_IRQn, 0x0E, 0);
   HAL_NVIC_EnableIRQ(SDIO_IRQn);
     
   /* Configure DMA Rx parameters */
@@ -476,42 +476,12 @@ static void SD_MspInit(void)
   HAL_DMA_Init(&dmaTxHandle); 
   
   /* NVIC configuration for DMA transfer complete interrupt */
-  HAL_NVIC_SetPriority(SD_DMAx_Rx_IRQn, 6, 0);
+  HAL_NVIC_SetPriority(SD_DMAx_Rx_IRQn, 0x0F, 0);
   HAL_NVIC_EnableIRQ(SD_DMAx_Rx_IRQn);
   
   /* NVIC configuration for DMA transfer complete interrupt */
-  HAL_NVIC_SetPriority(SD_DMAx_Tx_IRQn, 6, 0);
+  HAL_NVIC_SetPriority(SD_DMAx_Tx_IRQn, 0x0F, 0);
   HAL_NVIC_EnableIRQ(SD_DMAx_Tx_IRQn);
-}
-
-/**
-  * @brief  Handles SD card interrupt request.
-  * @param  None
-  * @retval None
-  */
-void BSP_SD_IRQHandler(void)
-{
-  HAL_SD_IRQHandler(&uSdHandle);
-}
-
-/**
-  * @brief  Handles SD DMA Tx transfer interrupt request.
-  * @param  None
-  * @retval None
-  */
-void BSP_SD_DMA_Tx_IRQHandler(void)
-{
-  HAL_DMA_IRQHandler(uSdHandle.hdmatx); 
-}
-
-/**
-  * @brief  Handles SD DMA Rx transfer interrupt request.
-  * @param  None
-  * @retval None
-  */
-void BSP_SD_DMA_Rx_IRQHandler(void)
-{
-  HAL_DMA_IRQHandler(uSdHandle.hdmarx);
 }
 
 /**
