@@ -1,7 +1,7 @@
 /**
  * @file    USARTDriver.c
  * @author  \@y_sharp
- * @date    2016/05/18
+ * @date    2016/11/08
  * @brief   USARTを用いたマルチバッファ送信のドライバです。
  * syscalls.c 内で標準出力の出力先として利用されています。ユーザが利用する必要はありません。
  */ 
@@ -242,7 +242,7 @@ void USART_Init(){
 typedef struct{
 	uint8_t enable;
 	uint8_t trns_buf[TRNS_CNT][TRNS_BUF];
-	uint32_t trns_cnt[TRNS_CNT];
+	uint16_t trns_cnt[TRNS_CNT];
 	uint32_t trns_data_cnt;
 	uint32_t trns_proc_now;
 }UART_SEND_DMA_QUEUE;
@@ -250,7 +250,7 @@ typedef struct{
 static volatile UART_SEND_DMA_QUEUE uart_send_queue[UART_NUM]={0};
 
 static volatile uint8_t trns_buf[TRNS_CNT][TRNS_BUF]={{0}};
-static volatile uint8_t trns_cnt[TRNS_CNT]={0};
+static volatile uint16_t trns_cnt[TRNS_CNT]={0};
 static uint16_t trns_data_cnt=0;
 static uint16_t trns_proc_now=0;
 
@@ -264,13 +264,13 @@ static void setTransmitStatus(int state){
 	}
 }
 
-static void setTransmitData(uint32_t* addr,int size){
+static void setTransmitData(uint32_t* addr,uint16_t size){
 	USARTx_TX_DMA_Stream->M0AR = (uint32_t)addr;
 	USARTx_TX_DMA_Stream->NDTR = size;
 	setTransmitStatus(1);
 }
 
-int send_str_DMA(char str[],uint16_t size){
+int send_str_DMA(char str[],size_t size){
 	int i;
 	
 	__disable_irq();
@@ -281,10 +281,11 @@ int send_str_DMA(char str[],uint16_t size){
 	}else{
 		//バッファサイズを超える場合はバッファサイズまで格納
 		if(size>TRNS_BUF)size=TRNS_BUF;
+		//DMAの最大バッファサイズは65535(2^16-1)なので飽和演算の処理
+		size=__USAT(size,16);
 		
 		for(i=0;i<size;i++){
 			trns_buf[trns_proc_now][i] = *str++;
-			if(trns_buf[trns_proc_now][i]=='\0')break;
 		}
 		
 		if(i!=0){//0バイト送信はしない
